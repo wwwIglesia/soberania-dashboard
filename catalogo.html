@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo comercial · Yerba Mate Soberanía</title>
+<meta name="description" content="Yerba Mate Soberanía · Catálogo comercial para distribuidores, mayoristas y comercios.">
+<style>
+  :root { --verde:#2f5d34; --verde-osc:#1b3a1f; --menta:#c5e8ca; --crema:#faf7ef; --texto:#1f2937; --gris:#6b7280; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: "Segoe UI", Arial, Helvetica, sans-serif; color:var(--texto); background:var(--crema); line-height:1.55; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 20px; }
+  header { background: var(--menta); text-align:center; padding: 36px 20px 28px; }
+  header img { width: 240px; max-width: 70%; height:auto; display:block; margin: 0 auto 14px; }
+  header .lema { font-style: italic; color: var(--verde-osc); font-size: 1.1rem; margin: 0; }
+  header .tipo { margin: 10px 0 0; font-size: .8rem; letter-spacing: .14em; font-weight: 700; color: var(--verde); text-transform: uppercase; }
+  section { padding: 34px 0 6px; }
+  h2 { color: var(--verde); font-size: 1.15rem; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 14px; border-bottom: 2px solid var(--menta); padding-bottom: 8px; }
+  .intro { font-size: 1.05rem; background:#fff; border-left: 4px solid var(--verde); padding: 16px 20px; border-radius: 0 10px 10px 0; margin:0; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .card { background:#fff; border: 1px solid #e3eee4; border-radius: 14px; padding: 20px; text-align:center; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .card .formato { font-size: 1.8rem; font-weight: 800; color: var(--verde-osc); }
+  .card .detalle { color: var(--gris); margin: 4px 0 12px; }
+  .card .pallet { display:inline-block; background: var(--menta); color: var(--verde-osc); font-weight: 700; font-size: .85rem; padding: 4px 12px; border-radius: 999px; }
+  ul.cond { list-style: none; padding: 0; margin: 0; display:grid; gap: 10px; }
+  ul.cond li { background:#fff; border-radius: 10px; padding: 14px 16px 14px 44px; position: relative; border: 1px solid #e3eee4; }
+  ul.cond li::before { content: "✓"; position:absolute; left: 16px; top: 13px; color: var(--verde); font-weight: 800; }
+  .nota { color: var(--gris); font-style: italic; font-size: .92rem; margin-top: 12px; }
+  .contacto { background: var(--verde-osc); color: #fff; border-radius: 16px; padding: 24px; display:flex; flex-wrap: wrap; gap: 18px; align-items:center; justify-content: space-between; }
+  .contacto .nombre { font-size: 1.25rem; font-weight: 800; margin:0; }
+  .contacto .rol { margin: 2px 0 10px; opacity: .85; }
+  .contacto .dato { margin: 2px 0; }
+  .contacto a { color: #fff; }
+  .botones { display:flex; flex-direction: column; gap: 10px; min-width: 220px; }
+  .btn { display:block; text-align:center; text-decoration:none; font-weight:700; padding: 12px 18px; border-radius: 10px; }
+  .btn-wa { background:#25d366; color:#0b3d1d !important; }
+  .btn-mail { background:#fff; color: var(--verde-osc) !important; }
+  .btn-pdf { background: transparent; border: 1px solid rgba(255,255,255,.6); color:#fff !important; cursor:pointer; font: inherit; font-weight:700; }
+  footer { text-align:center; color: var(--gris); font-size: .85rem; padding: 30px 20px 40px; }
+  @media print {
+    body { background:#fff; }
+    .botones { display:none; }
+    section { padding-top: 20px; break-inside: avoid; }
+    .contacto { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    header, .card .pallet { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <img src="data:image/webp;base64,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" alt="Yerba Mate Soberanía">
+  <p class="lema">Más que un producto, una identidad.</p>
+  <p class="tipo">Catálogo comercial · Distribuidores, mayoristas y comercios</p>
+</header>
+
+<main class="wrap">
+  <section>
+    <h2>Una propuesta para su negocio</h2>
+    <p class="intro">Hola, soy <strong>Juan Lewczuk</strong>, representante comercial de Yerba Mate Soberanía. Trabajamos para llevar al mercado una yerba mate de calidad, con el objetivo de construir relaciones comerciales sólidas y duraderas con cada cliente. Me gustaría conocer un poco más sobre su negocio y ver de qué manera podemos acompañarlos con nuestros productos y condiciones comerciales.</p>
+  </section>
+
+  <section>
+    <h2>Nuestras presentaciones</h2>
+    <div class="cards">
+      <div class="card"><div class="formato">10 × ½ kg</div><div class="detalle">10 paquetes de 500 g por pack</div><span class="pallet">500 kg por pallet</span></div>
+      <div class="card"><div class="formato">5 × 1 kg</div><div class="detalle">5 paquetes de 1 kg por pack</div><span class="pallet">500 kg por pallet</span></div>
+      <div class="card"><div class="formato">10 × 1 kg</div><div class="detalle">10 paquetes de 1 kg por pack</div><span class="pallet">500 kg por pallet</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Condiciones comerciales y logística</h2>
+    <ul class="cond">
+      <li>Condiciones de pago flexibles según el volumen y las características de la operación.</li>
+      <li>Coordinación de logística y entregas según la zona geográfica y el volumen solicitado.</li>
+    </ul>
+    <p class="nota">Precios y condiciones específicas se confirman en el contacto directo según volumen y operación.</p>
+  </section>
+
+  <section>
+    <h2>Contacto comercial</h2>
+    <div class="contacto">
+      <div>
+        <p class="nombre">Juan Lewczuk</p>
+        <p class="rol">Representante comercial · Yerba Mate Soberanía</p>
+        <p class="dato">☎ Teléfono / WhatsApp: <strong>11 3134-4552</strong></p>
+        <p class="dato">✉ <a href="mailto:lewczuk.juani@gmail.com">lewczuk.juani@gmail.com</a></p>
+      </div>
+      <div class="botones">
+        <a class="btn btn-wa" href="https://wa.me/5491131344552?text=Hola%20Juan%2C%20vi%20el%20cat%C3%A1logo%20de%20Yerba%20Mate%20Soberan%C3%ADa%20y%20quiero%20m%C3%A1s%20informaci%C3%B3n." target="_blank" rel="noopener">Escribir por WhatsApp</a>
+        <a class="btn btn-mail" href="mailto:lewczuk.juani@gmail.com?subject=Consulta%20cat%C3%A1logo%20Yerba%20Mate%20Soberan%C3%ADa">Enviar un correo</a>
+        <button class="btn btn-pdf" onclick="window.print()">Descargar en PDF</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>Yerba Mate Soberanía · Más que un producto, una identidad.</footer>
+</body>
+</html>
