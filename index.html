@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soberanía · Prospección B2B</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { mate: { 50:'#f3f7f1', 100:'#e1ecdc', 500:'#4a7d4f', 600:'#3b6a40', 700:'#2f5d34', 900:'#1b3a1f' },
+              crema: '#faf7ef' },
+    fontFamily: { sans: ['Inter','system-ui','sans-serif'] } } } };
+</script>
+<style>
+  .chip{font-size:.72rem;font-weight:600;padding:.15rem .55rem;border-radius:999px;white-space:nowrap}
+  tbody tr:hover{background:#f8faf7}
+  .spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body class="bg-crema text-slate-800 font-sans min-h-screen">
+
+<!-- ======================= CONFIGURACIÓN ======================= -->
+<script>
+const CONFIG = {
+  SUPABASE_URL:      'https://mperonyucrvyebvecnwo.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1wZXJvbnl1Y3J2eWVidmVjbndvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4NTM4MDAsImV4cCI6MjExMDQyOTgwMH0.lM9-_GfyzzJaiR5oHTpvSZ9TS45OZDAsoipKQNN8_Xo', // clave "anon public" (NUNCA la service_role)
+  N8N_WEBHOOK_ENVIAR: 'https://joelibanez.app.n8n.cloud/webhook/soberania-enviar',
+  N8N_WEBHOOK_BUSCAR: 'https://joelibanez.app.n8n.cloud/webhook/soberania-buscar',
+};
+// Si la config tiene valores de ejemplo, el dashboard arranca en MODO DEMO con datos ficticios.
+const DEMO = CONFIG.SUPABASE_URL.includes('TU-PROYECTO');
+</script>
+<!-- ============================================================= -->
+
+<!-- LOGIN -->
+<section id="vistaLogin" class="hidden min-h-screen flex items-center justify-center p-6">
+  <div class="bg-white rounded-2xl shadow-sm border border-mate-100 p-8 w-full max-w-sm">
+    <div class="text-mate-700 font-extrabold text-2xl">Soberanía</div>
+    <p class="text-sm text-slate-500 mb-6">Más que un producto, una identidad.</p>
+    <form id="formLogin">
+      <label class="text-sm font-medium">Email</label>
+      <input id="loginEmail" type="email" required autocomplete="username" class="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-mate-500" placeholder="tu@email.com">
+      <label class="text-sm font-medium mt-3 block">Contraseña</label>
+      <input id="loginPass" type="password" required minlength="8" autocomplete="current-password" class="mt-1 w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-mate-500" placeholder="mínimo 8 caracteres">
+      <button class="mt-4 w-full bg-mate-700 hover:bg-mate-900 text-white font-semibold rounded-lg py-2.5">Ingresar</button>
+    </form>
+    <button id="btnRegistro" class="mt-2 w-full border border-mate-500 text-mate-700 hover:bg-mate-50 font-semibold rounded-lg py-2">Crear cuenta (primera vez)</button>
+    <p id="loginMsg" class="text-sm mt-3 text-slate-600"></p>
+  </div>
+</section>
+
+<!-- APP -->
+<section id="vistaApp" class="hidden">
+  <header class="bg-mate-900 text-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+      <div>
+        <div class="font-extrabold text-xl tracking-tight">Yerba Mate Soberanía</div>
+        <div class="text-mate-100 text-xs">Prospección comercial B2B · Juan Lewczuk</div>
+      </div>
+      <div class="flex items-center gap-3 text-sm">
+        <span id="demoBadge" class="hidden chip bg-amber-300 text-amber-900">MODO DEMO</span>
+        <span id="usuarioEmail" class="text-mate-100 hidden sm:inline"></span>
+        <button id="btnSalir" class="border border-mate-500 hover:bg-mate-700 rounded-lg px-3 py-1.5">Salir</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <!-- KPIs -->
+    <div id="kpis" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+
+    <!-- Buscar nuevas empresas -->
+    <details class="bg-white rounded-xl border border-mate-100 shadow-sm">
+      <summary class="cursor-pointer px-4 py-3 font-semibold text-mate-700">＋ Buscar nuevas empresas (Google Places)</summary>
+      <form id="formBuscar" class="px-4 pb-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+        <div><label class="text-xs font-medium text-slate-500">Rubro</label>
+          <select name="rubro" class="w-full border rounded-lg px-2 py-2">
+            <option value="distribuidora">Distribuidoras</option>
+            <option value="supermercado">Supermercados</option>
+            <option value="comercio_exterior">Comercio exterior</option>
+          </select></div>
+        <div><label class="text-xs font-medium text-slate-500">Provincia</label>
+          <select name="provincia" id="selProvincia" class="w-full border rounded-lg px-2 py-2" required></select></div>
+        <div><label class="text-xs font-medium text-slate-500">Localidad (opcional)</label>
+          <input name="localidad" class="w-full border rounded-lg px-2 py-2" placeholder="Ej.: Rosario"></div>
+        <div><label class="text-xs font-medium text-slate-500">Búsqueda libre (opcional)</label>
+          <input name="consulta_extra" class="w-full border rounded-lg px-2 py-2" placeholder="Ej.: mayorista de yerba"></div>
+        <button class="bg-mate-600 hover:bg-mate-700 text-white font-semibold rounded-lg py-2">Buscar</button>
+      </form>
+    </details>
+
+    <!-- Filtros + acción -->
+    <div class="bg-white rounded-xl border border-mate-100 shadow-sm">
+      <div class="p-4 flex flex-wrap gap-3 items-center border-b border-mate-100">
+        <input id="fTexto" class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[200px]" placeholder="Buscar por nombre, email o localidad…">
+        <select id="fRubro" class="border rounded-lg px-2 py-2 text-sm">
+          <option value="">Todos los rubros</option>
+          <option value="supermercado">Supermercados</option>
+          <option value="distribuidora">Distribuidoras</option>
+          <option value="comercio_exterior">Comercio exterior</option>
+          <option value="otro">Otro</option>
+        </select>
+        <select id="fProvincia" class="border rounded-lg px-2 py-2 text-sm"><option value="">Todas las provincias</option></select>
+        <select id="fEstado" class="border rounded-lg px-2 py-2 text-sm">
+          <option value="">Todos los estados</option>
+          <option>Nuevo</option><option>Contactado</option><option>Respondido</option>
+          <option>Sin email</option><option>Descartado</option><option>No contactar</option>
+        </select>
+        <button id="btnRefrescar" class="text-sm border rounded-lg px-3 py-2 hover:bg-mate-50" title="Refrescar">⟳</button>
+        <button id="btnEnviar" disabled
+          class="ml-auto bg-mate-700 hover:bg-mate-900 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg px-4 py-2 text-sm">
+          Enviar Propuesta Comercial <span id="contadorSel" class="ml-1 bg-white/20 rounded px-1.5">0</span>
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-mate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th class="p-3 w-10"><input id="chkTodos" type="checkbox" class="accent-mate-700 w-4 h-4" title="Seleccionar todos los aptos"></th>
+              <th class="p-3">Empresa</th><th class="p-3">Rubro</th><th class="p-3">Ubicación</th>
+              <th class="p-3">Email</th><th class="p-3">Estado</th><th class="p-3">Último envío</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="p-3 text-xs text-slate-500 border-t border-mate-100 flex justify-between">
+        <span id="pie"></span>
+        <span>Sólo se pueden seleccionar empresas con email y en estado <b>Nuevo</b>.</span>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- Modal de confirmación -->
+<div id="modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl">
+    <h3 class="text-lg font-bold text-mate-900">Confirmar envío</h3>
+    <p class="text-sm text-slate-600 mt-2">Se va a generar con IA y enviar desde Gmail una propuesta personalizada a
+      <b id="modalCant"></b> empresa(s). Los correos salen de a uno, con 45 segundos de pausa.</p>
+    <ul id="modalLista" class="mt-3 max-h-40 overflow-auto text-sm text-slate-700 list-disc pl-5"></ul>
+    <div class="mt-5 flex justify-end gap-2">
+      <button id="modalCancelar" class="px-4 py-2 rounded-lg border">Cancelar</button>
+      <button id="modalConfirmar" class="px-4 py-2 rounded-lg bg-mate-700 hover:bg-mate-900 text-white font-semibold">Enviar ahora</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-5 right-5 max-w-sm rounded-xl shadow-lg px-4 py-3 text-sm text-white z-50"></div>
+
+<script>
+const PROVINCIAS = ['Buenos Aires','Ciudad Autónoma de Buenos Aires','Catamarca','Chaco','Chubut','Córdoba','Corrientes',
+  'Entre Ríos','Formosa','Jujuy','La Pampa','La Rioja','Mendoza','Misiones','Neuquén','Río Negro','Salta','San Juan',
+  'San Luis','Santa Cruz','Santa Fe','Santiago del Estero','Tierra del Fuego','Tucumán'];
+const RUBRO_TXT = { supermercado:'Supermercado', distribuidora:'Distribuidora', comercio_exterior:'Comercio exterior', otro:'Otro' };
+const ESTADO_CLS = {
+  'Nuevo':'bg-sky-100 text-sky-800', 'Contactado':'bg-amber-100 text-amber-800', 'Respondido':'bg-emerald-100 text-emerald-800',
+  'Sin email':'bg-slate-100 text-slate-600', 'Descartado':'bg-rose-100 text-rose-700', 'No contactar':'bg-rose-200 text-rose-900' };
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let sb = null, leads = [], seleccion = new Set();
+
+// ---------- datos demo ----------
+const DEMO_LEADS = [
+  { id:1, nombre:'Distribuidora Del Litoral SRL', rubro:'distribuidora', provincia:'Santa Fe', localidad:'Rosario', email:'ventas@dlitoral.com.ar', estado:'Nuevo', ultimo_envio:null },
+  { id:2, nombre:'Autoservicio La Esquina', rubro:'supermercado', provincia:'Córdoba', localidad:'Villa María', email:'compras@laesquina.com.ar', estado:'Nuevo', ultimo_envio:null },
+  { id:3, nombre:'Andes Trade Export SA', rubro:'comercio_exterior', provincia:'Mendoza', localidad:'Godoy Cruz', email:'info@andestrade.com.ar', estado:'Contactado', ultimo_envio:'2026-11-10T14:20:00Z' },
+  { id:4, nombre:'Mayorista El Norte', rubro:'distribuidora', provincia:'Tucumán', localidad:'San Miguel de Tucumán', email:null, estado:'Sin email', ultimo_envio:null },
+  { id:5, nombre:'Super Familia', rubro:'supermercado', provincia:'Buenos Aires', localidad:'Mar del Plata', email:'administracion@superfamilia.com.ar', estado:'Respondido', ultimo_envio:'2026-11-06T12:00:00Z' },
+  { id:6, nombre:'Distribuidora Patagónica', rubro:'distribuidora', provincia:'Neuquén', localidad:'Neuquén', email:'pedidos@dpatagonica.com.ar', estado:'Nuevo', ultimo_envio:null },
+];
+
+// ---------- utilidades UI ----------
+function toast(msg, tipo = 'ok') {
+  const t = $('toast');
+  t.className = 'fixed bottom-5 right-5 max-w-sm rounded-xl shadow-lg px-4 py-3 text-sm text-white z-50 ' +
+    (tipo === 'ok' ? 'bg-mate-700' : 'bg-rose-600');
+  t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.add('hidden'), 5000);
+}
+const fecha = (iso) => iso ? new Date(iso).toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+const apto = (l) => !!l.email && l.estado === 'Nuevo';
+
+async function token() {
+  if (DEMO) return 'demo';
+  const { data } = await sb.auth.getSession();
+  return data.session?.access_token;
+}
+
+async function llamarWebhook(url, payload) {
+  if (DEMO) { await new Promise(r => setTimeout(r, 700)); return { ok: true, en_cola: payload.lead_ids?.length, mensaje: 'Demo: no se envió nada.' }; }
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + await token() },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Error ${res.status} en n8n`);
+  return data;
+}
+
+// ---------- carga y render ----------
+async function cargar() {
+  $('tbody').innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400"><span class="inline-block spin">⟳</span> Cargando…</td></tr>`;
+  if (DEMO) { leads = structuredClone(DEMO_LEADS); }
+  else {
+    const { data, error } = await sb.from('v_leads').select('*').order('created_at', { ascending: false }).limit(2000);
+    if (error) { toast('No se pudieron leer los leads: ' + error.message, 'err'); leads = []; }
+    else leads = data;
+  }
+  [...seleccion].forEach(id => { if (!leads.find(l => l.id === id && apto(l))) seleccion.delete(id); });
+  llenarProvinciasFiltro(); render();
+}
+
+function filtrados() {
+  const tx = $('fTexto').value.trim().toLowerCase();
+  const r = $('fRubro').value, p = $('fProvincia').value, e = $('fEstado').value;
+  return leads.filter(l =>
+    (!r || l.rubro === r) && (!p || l.provincia === p) && (!e || l.estado === e) &&
+    (!tx || [l.nombre, l.email, l.localidad, l.provincia].some(v => (v || '').toLowerCase().includes(tx))));
+}
+
+function render() {
+  const lista = filtrados();
+  $('tbody').innerHTML = lista.length ? lista.map(l => `
+    <tr class="border-t border-slate-100 ${apto(l) ? '' : 'text-slate-500'}">
+      <td class="p-3"><input type="checkbox" data-id="${l.id}" class="chk accent-mate-700 w-4 h-4"
+           ${seleccion.has(l.id) ? 'checked' : ''} ${apto(l) ? '' : 'disabled'}></td>
+      <td class="p-3 font-medium text-slate-800">${esc(l.nombre)}
+        ${l.sitio_web ? `<a href="${esc(l.sitio_web)}" target="_blank" rel="noopener" class="ml-1 text-mate-600 text-xs">↗</a>` : ''}</td>
+      <td class="p-3">${esc(RUBRO_TXT[l.rubro] || l.rubro)}</td>
+      <td class="p-3">${esc([l.localidad, l.provincia].filter(Boolean).join(', ') || '—')}</td>
+      <td class="p-3 font-mono text-xs">${l.email ? esc(l.email) : '<span class="text-slate-400">sin email</span>'}</td>
+      <td class="p-3"><span class="chip ${ESTADO_CLS[l.estado] || ''}">${esc(l.estado)}</span></td>
+      <td class="p-3 text-xs">${fecha(l.ultimo_envio)}</td>
+    </tr>`).join('')
+    : `<tr><td colspan="7" class="p-8 text-center text-slate-400">No hay empresas con estos filtros.</td></tr>`;
+
+  const aptosVis = lista.filter(apto);
+  $('chkTodos').checked = aptosVis.length > 0 && aptosVis.every(l => seleccion.has(l.id));
+  $('contadorSel').textContent = seleccion.size;
+  $('btnEnviar').disabled = seleccion.size === 0;
+  $('pie').textContent = `${lista.length} de ${leads.length} empresas`;
+  renderKpis();
+}
+
+function renderKpis() {
+  const c = (e) => leads.filter(l => l.estado === e).length;
+  const contactados = c('Contactado') + c('Respondido');
+  const tasa = contactados ? Math.round(c('Respondido') / contactados * 100) : 0;
+  const kpi = (t, v, cls = '') => `<div class="bg-white rounded-xl border border-mate-100 p-4 shadow-sm">
+      <div class="text-xs text-slate-500">${t}</div><div class="text-2xl font-bold ${cls}">${v}</div></div>`;
+  $('kpis').innerHTML = kpi('Empresas', leads.length) + kpi('Nuevas con email', leads.filter(apto).length, 'text-sky-700') +
+    kpi('Contactadas', c('Contactado'), 'text-amber-700') + kpi('Respondieron', c('Respondido'), 'text-emerald-700') +
+    kpi('Tasa de respuesta', tasa + '%', 'text-mate-700');
+}
+
+function llenarProvinciasFiltro() {
+  const sel = $('fProvincia'), actual = sel.value;
+  const provs = [...new Set(leads.map(l => l.provincia).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Todas las provincias</option>' + provs.map(p => `<option>${esc(p)}</option>`).join('');
+  sel.value = actual;
+}
+
+// ---------- eventos ----------
+$('tbody').addEventListener('change', (e) => {
+  if (!e.target.classList.contains('chk')) return;
+  const id = Number(e.target.dataset.id);
+  e.target.checked ? seleccion.add(id) : seleccion.delete(id);
+  render();
+});
+$('chkTodos').addEventListener('change', (e) => {
+  filtrados().filter(apto).forEach(l => e.target.checked ? seleccion.add(l.id) : seleccion.delete(l.id));
+  render();
+});
+['fTexto','fRubro','fProvincia','fEstado'].forEach(id => $(id).addEventListener('input', render));
+$('btnRefrescar').onclick = cargar;
+
+$('btnEnviar').onclick = () => {
+  const sel = leads.filter(l => seleccion.has(l.id));
+  if (sel.length > 40) return toast('Máximo 40 empresas por envío para cuidar la reputación de tu Gmail.', 'err');
+  $('modalCant').textContent = sel.length;
+  $('modalLista').innerHTML = sel.map(l => `<li>${esc(l.nombre)} <span class="text-slate-400">· ${esc(l.email)}</span></li>`).join('');
+  $('modal').classList.remove('hidden');
+};
+$('modalCancelar').onclick = () => $('modal').classList.add('hidden');
+$('modalConfirmar').onclick = async () => {
+  const btn = $('modalConfirmar'); btn.disabled = true; btn.textContent = 'Enviando…';
+  try {
+    const ids = [...seleccion];
+    const r = await llamarWebhook(CONFIG.N8N_WEBHOOK_ENVIAR, { lead_ids: ids });
+    toast(`✓ ${r.en_cola ?? ids.length} propuesta(s) en cola. ${r.mensaje || ''}`);
+    if (DEMO) leads.forEach(l => { if (seleccion.has(l.id)) { l.estado = 'Contactado'; l.ultimo_envio = new Date().toISOString(); } });
+    seleccion.clear(); $('modal').classList.add('hidden');
+    DEMO ? render() : setTimeout(cargar, 3000);
+  } catch (err) { toast(err.message, 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Enviar ahora'; }
+};
+
+$('formBuscar').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const datos = Object.fromEntries(new FormData(e.target));
+  try {
+    const r = await llamarWebhook(CONFIG.N8N_WEBHOOK_BUSCAR, datos);
+    toast(r.mensaje || 'Búsqueda iniciada.');
+  } catch (err) { toast(err.message, 'err'); }
+});
+
+// ---------- auth ----------
+$('formLogin').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const { data, error } = await sb.auth.signInWithPassword({ email: $('loginEmail').value.trim(), password: $('loginPass').value });
+  if (error) return $('loginMsg').textContent = 'Error: ' + (error.message === 'Invalid login credentials' ? 'email o contraseña incorrectos.' : error.message);
+  mostrarApp(data.user.email);
+});
+$('btnRegistro').onclick = async () => {
+  const email = $('loginEmail').value.trim(), password = $('loginPass').value;
+  if (!email || password.length < 8) return $('loginMsg').textContent = 'Completá email y una contraseña de 8+ caracteres.';
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error) return $('loginMsg').textContent = 'Error: ' + error.message;
+  if (data.session) mostrarApp(data.user.email);
+  else $('loginMsg').textContent = 'Cuenta creada. Revisá tu correo para confirmarla y después ingresá.';
+};
+$('btnSalir').onclick = async () => { if (!DEMO) await sb.auth.signOut(); location.reload(); };
+
+function mostrarApp(email) {
+  $('vistaLogin').classList.add('hidden'); $('vistaApp').classList.remove('hidden');
+  $('usuarioEmail').textContent = email; cargar();
+}
+
+(async function init() {
+  $('selProvincia').innerHTML = PROVINCIAS.map(p => `<option>${p}</option>`).join('');
+  if (DEMO) { $('demoBadge').classList.remove('hidden'); return mostrarApp('demo@soberania'); }
+  sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+  const { data } = await sb.auth.getSession();
+  if (data.session) mostrarApp(data.session.user.email);
+  else $('vistaLogin').classList.remove('hidden');
+  sb.auth.onAuthStateChange((_ev, session) => { if (session && $('vistaApp').classList.contains('hidden')) mostrarApp(session.user.email); });
+})();
+</script>
+</body>
+</html>
